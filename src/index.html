@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acti canvas renderer</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="app"></canvas>
+  <script>
+    const canvas = document.getElementById("app")
+    const ctx = canvas.getContext("2d")
+
+    canvas.width = document.body.clientWidth
+    canvas.height = document.body.clientHeight
+    ctx.textBaseline = "top"
+
+    function button(props) {
+      ctx.fillStyle = props.backgroundColor
+      ctx.fillRect(props.position.x, props.position.y, props.size.width, props.size.height)
+
+      ctx.font = "600 16px sans-serif";
+      ctx.fillStyle = props.textColor;
+      ctx.fillText(
+        props.text.toUpperCase(),
+        props.position.x + props.size.width / 2 - ctx.measureText(props.text.toUpperCase()).width / 2,
+        props.position.y + props.size.height / 2 - 6
+      )
+    }
+
+    // On scroll
+    let needToScroll = 0;
+
+    canvas.addEventListener("wheel", (e) => {
+      // console.log(e)
+
+      // position.y += e.deltaY * 0.1;
+
+      // setTimeout(() => {
+      // position.y += e.deltaY * 0.2
+      // }, 250)
+      needToScroll += -e.deltaY * 0.05
+    })
+
+    // Button position
+    let position = {
+      x: 100, y: 100,
+    }
+    let height = 400;
+
+    let currentTime = new Date().getTime();
+
+    function View(props) {
+      // Default props
+      props.margin ??= 0;
+      props.padding ??= 0;
+
+      props.flexDirection ??= "column";
+
+      props.backgroundColor ??= "#fff"
+      // End default props
+
+      let parentWidth = 0, parentHeight = 0;
+
+      // Calc parent size
+      if (props.children) {
+        // Get max width and height of children
+        if (props.flexDirection == "column") {
+          // Get max width
+          parentWidth = Math.max(...props.children.map((child) => child.width))
+          // Get max margin
+          parentWidth += Math.max(...props.children.map((child) => child.margin)) * 2
+        }
+        if (props.flexDirection == "row") {
+          // Get max height
+          parentHeight = Math.max(...props.children.map((child) => child.height))
+          // Get max margin
+          parentHeight += Math.max(...props.children.map((child) => child.margin)) * 2
+        }
+
+        // Add margins and paddings to result
+        for (child of props.children) {
+          if (props.flexDirection == "column") {
+            parentHeight += child.height + child.margin * 2;
+          }
+          if (props.flexDirection == "row") {
+            parentWidth += child.width + child.margin * 2;
+          }
+        }
+
+        console.log("Parent size:", parentWidth + props.padding * 2, parentHeight + props.padding * 2)
+      }
+
+      // Render parent
+      ctx.fillStyle = props.backgroundColor
+      ctx.fillRect(props.margin, props.margin, parentWidth + props.padding * 2, parentHeight + props.padding * 2)
+
+      let prevMargin = 0;
+
+      // Render children
+      if (props.children) {
+        let x = 0, y = 0;
+
+        for (child of props.children) {
+          const needPrevMarginWidth = props.flexDirection == "row" ? prevMargin : 0;
+          const needPrevMarginHeight = props.flexDirection == "column" ? prevMargin : 0;
+
+          ctx.fillStyle = child.backgroundColor
+          ctx.fillRect(x + props.padding + props.margin + child.margin + needPrevMarginWidth, y + props.padding + props.margin + child.margin + needPrevMarginHeight, child.width, child.height)
+
+          if (props.flexDirection == "column") {
+            y += child.height + child.margin
+          }
+          if (props.flexDirection == "row") {
+            x += child.width + child.margin
+          }
+
+          prevMargin += child.margin
+        }
+
+        console.log(props.children)
+      }
+
+      return props;
+    }
+
+    // Render
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // Standart windows scroll
+      // if (position.y + needToScroll >= 0 && position.y + needToScroll < canvas.height - height) {
+      //   position.y += needToScroll
+      // } else if (position.y + needToScroll < 0) {
+      //   position.y = 0
+      // } else {
+      //   position.y = canvas.height - height
+      // }
+
+      // Mac OS scroll
+      if (position.y < 0) {
+        // console.log(-(position.y + needToScroll) * 0.2)
+
+        position.y += -position.y * 0.2
+
+        // if (-(position.y + needToScroll) * 0.2 < 0.1) {
+        //   position.y = 0
+        // }
+      } else if (position.y > canvas.height - height) {
+        console.log((position.y))
+        // console.log(needToScroll)
+
+        position.y -= position.y * 0.02
+      }
+
+      position.y += needToScroll
+
+      // Check if scroll animation stopped
+      if (needToScroll < 1 && -needToScroll < 1) {
+        needToScroll = 0
+      }
+
+      // needToScroll -= needToScroll * 0.1;
+      needToScroll *= 0.88;
+
+      // button({
+      //   position: position,
+      //   size: {
+      //     width: 800, height: height,
+      //   },
+      //   text: "Продовжити",
+      //   backgroundColor: "#000",
+      //   textColor: "#fff"
+      // })
+
+      View({
+        flexDirection: "row",
+        // padding: 16,
+        // margin: 32,
+        backgroundColor: "yellow",
+        children: [
+          View({
+            width: 200,
+            height: 200,
+            margin: 10,
+            backgroundColor: "red"
+          }),
+          View({
+            width: 200,
+            height: 200,
+            margin: 10,
+            backgroundColor: "green"
+          }),
+          View({
+            width: 200,
+            height: 200,
+            margin: 10,
+            backgroundColor: "blue"
+          })
+        ]
+      })
+
+      // 60 FPS 
+      // if (new Date().getTime() - currentTime >= 1000) {
+      // currentTime = new Date().getTime()
+      // console.log("1 sec")
+      // }
+
+      // requestAnimationFrame(render)
+    }
+    requestAnimationFrame(render)
+  </script>
+</body>
+
+</html>
